@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RP Memory · 记忆工作台</title>
+<style>
+:root{color-scheme:light;--bg:#f5f7fb;--panel:#fff;--ink:#202632;--muted:#697386;--line:#e3e7ef;--accent:#4968d8;--danger:#b83242}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+header{background:#fff;border-bottom:1px solid var(--line);padding:20px max(18px,calc((100vw - 960px)/2));position:sticky;top:0;z-index:2}
+h1{font-size:22px;margin:0}header p{margin:5px 0 0;color:var(--muted);font-size:13px}
+main{max-width:960px;margin:22px auto;padding:0 16px 40px;display:grid;gap:16px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px;box-shadow:0 3px 14px #17255408}
+h2{font-size:17px;margin:0 0 14px}.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+label{display:block;font-size:13px;color:var(--muted);margin-bottom:5px}
+input,select,textarea,button{font:inherit;border-radius:10px;border:1px solid var(--line);padding:11px 12px;background:#fff;color:var(--ink);max-width:100%}
+input,select,textarea{width:100%}textarea{min-height:100px;resize:vertical}
+.field{flex:1;min-width:140px}button{cursor:pointer;font-weight:600;background:var(--accent);color:white;border-color:var(--accent)}
+button.secondary{background:#fff;color:var(--ink);border-color:var(--line)}button.danger{background:#fff;color:var(--danger);border-color:#f0cbd0}
+small,.muted{color:var(--muted)}.notice{background:#eef3ff;border:1px solid #dbe5ff;padding:12px;border-radius:12px;color:#344b91;font-size:13px}
+.cards{display:grid;gap:10px}.item{border:1px solid var(--line);border-radius:12px;padding:14px;background:#fff}
+.itemtop{display:flex;justify-content:space-between;gap:10px;align-items:start}.pill{font-size:12px;background:#eef1f8;border-radius:20px;padding:4px 8px;color:#536078;white-space:nowrap}
+.item h3{margin:8px 0;font-size:16px;overflow-wrap:anywhere}.item p{margin:0;white-space:pre-wrap;overflow-wrap:anywhere}
+.item .meta{font-size:12px;color:var(--muted);margin-top:10px}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.actions button{padding:7px 10px;font-size:13px}
+footer{max-width:960px;margin:0 auto;padding:0 16px 30px;color:var(--muted);font-size:12px}
+@media(min-width:760px){main{grid-template-columns:340px 1fr;align-items:start}main .listpanel{grid-column:2;grid-row:1 / span 2}main .formpanel{grid-column:1}main .projectpanel{grid-column:1}}
+</style>
+</head>
+<body>
+<header><h1>RP Memory · 记忆工作台</h1><p>轻量公开版 · 按故事项目隔离保存</p></header>
+<main>
+<section class="panel projectpanel">
+<h2>故事项目</h2>
+<div class="field"><label for="project">当前项目</label><select id="project"></select></div>
+<div class="row" style="margin-top:10px"><input id="newProject" placeholder="新项目名称" aria-label="新项目名称"><button id="addProject">创建</button></div>
+<div class="notice" style="margin-top:12px">数据保存在当前浏览器的本机存储中。不同浏览器或设备之间不会自动同步。</div>
+</section>
+<section class="panel formpanel">
+<h2 id="formTitle">添加记忆</h2>
+<form id="recordForm">
+<div class="field"><label for="type">类型</label><select id="type"><option value="character">人物</option><option value="relationship">关系</option><option value="event">事件</option><option value="fact">事实</option><option value="knowledge-boundary">知情边界</option><option value="open-item">待处理事项</option></select></div>
+<div class="field" style="margin-top:10px"><label for="title">标题</label><input id="title" required maxlength="160" placeholder="例如：主角 / 初次见面"></div>
+<div class="field" style="margin-top:10px"><label for="content">内容</label><textarea id="content" required placeholder="写下要记住的内容…"></textarea></div>
+<div class="actions"><button type="submit" id="saveBtn">保存记忆</button><button type="button" class="secondary" id="cancelEdit" hidden>取消编辑</button></div>
+</form>
+</section>
+<section class="panel listpanel">
+<div class="row" style="justify-content:space-between"><h2 style="margin:0">记忆列表</h2><span class="pill" id="count">0 条</span></div>
+<div class="row" style="margin:14px 0">
+<div class="field"><label for="filter">类型筛选</label><select id="filter"><option value="">全部类型</option><option value="character">人物</option><option value="relationship">关系</option><option value="event">事件</option><option value="fact">事实</option><option value="knowledge-boundary">知情边界</option><option value="open-item">待处理事项</option></select></div>
+<div class="field"><label for="search">搜索</label><input id="search" placeholder="搜索标题或内容"></div>
+</div>
+<div class="actions" style="margin:0 0 14px"><button class="secondary" id="export">导出当前项目 JSON</button><button class="secondary" id="importBtn">导入 JSON</button><input type="file" id="importFile" accept="application/json,.json" hidden></div>
+<div id="records" class="cards"></div>
+<p id="empty" class="muted">这个项目还没有记忆。添加第一条吧。</p>
+</section>
+</main>
+<footer>公开版 MVP。数据仅存于此浏览器的 IndexedDB。请勿在共享设备保存敏感或私人内容；导出的 JSON 文件由你自行保管。</footer>
+<script>
+(()=>{'use strict';
+const DB='rp-memory-public-v1',STORE='records',PROJECTS='projects';
+const $=id=>document.getElementById(id);
+const labels={character:'人物',relationship:'关系',event:'事件',fact:'事实','knowledge-boundary':'知情边界','open-item':'待处理事项'};
+let db,projects=['我的故事'],current='我的故事',editing=null;
+function openDB(){return new Promise((resolve,reject)=>{const req=indexedDB.open(DB,1);req.onupgradeneeded=()=>{const d=req.result;if(!d.objectStoreNames.contains(STORE)){const s=d.createObjectStore(STORE,{keyPath:'id'});s.createIndex('projectId','projectId');}if(!d.objectStoreNames.contains(PROJECTS))d.createObjectStore(PROJECTS,{keyPath:'name'});};req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);});}
+function tx(store,mode='readonly'){return db.transaction(store,mode).objectStore(store)}
+function allRecords(){return new Promise((resolve,reject)=>{const r=tx(STORE).getAll();r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);});}
+function saveRecord(record){return new Promise((resolve,reject)=>{const r=tx(STORE,'readwrite').put(record);r.onsuccess=()=>resolve();r.onerror=()=>reject(r.error);});}
+function deleteRecord(id){return new Promise((resolve,reject)=>{const r=tx(STORE,'readwrite').delete(id);r.onsuccess=()=>resolve();r.onerror=()=>reject(r.error);});}
+function loadProjects(){return new Promise((resolve,reject)=>{const r=tx(PROJECTS).getAll();r.onsuccess=()=>resolve(r.result.map(x=>x.name));r.onerror=()=>reject(r.error);});}
+function saveProject(name){return new Promise((resolve,reject)=>{const r=tx(PROJECTS,'readwrite').put({name});r.onsuccess=()=>resolve();r.onerror=()=>reject(r.error);});}
+function id(){return crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2);}
+function renderProjects(){const s=$('project');s.replaceChildren();projects.forEach(p=>{const o=document.createElement('option');o.value=p;o.textContent=p;s.append(o);});s.value=current;}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+async function render(){const all=await allRecords();const term=$('search').value.trim().toLowerCase(),type=$('filter').value;
+const items=all.filter(r=>r.projectId===current&&(!type||r.type===type)&&(!term||(r.title+' '+r.content).toLowerCase().includes(term))).sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt));
+$('count').textContent=items.length+' 条';$('empty').hidden=items.length>0;
+$('records').innerHTML=items.map(r=>`<article class="item"><div class="itemtop"><span class="pill">${labels[r.type]||r.type}</span><small>${new Date(r.updatedAt).toLocaleString()}</small></div><h3>${esc(r.title)}</h3><p>${esc(r.content)}</p><div class="actions"><button class="secondary" data-edit="${r.id}">编辑</button><button class="danger" data-delete="${r.id}">删除</button></div></article>`).join('');
+}
+function resetForm(){editing=null;$('recordForm').reset();$('formTitle').textContent='添加记忆';$('saveBtn').textContent='保存记忆';$('cancelEdit').hidden=true;}
+$('project').addEventListener('change',e=>{current=e.target.value;resetForm();render();});
+$('addProject').addEventListener('click',async()=>{const name=$('newProject').value.trim();if(!name)return;if(projects.includes(name)){alert('这个项目已经存在');return;}projects.push(name);await saveProject(name);current=name;$('newProject').value='';renderProjects();render();});
+$('recordForm').addEventListener('submit',async e=>{e.preventDefault();const record={id:editing||id(),projectId:current,type:$('type').value,title:$('title').value.trim(),content:$('content').value.trim(),updatedAt:new Date().toISOString()};if(!record.title||!record.content)return;await saveRecord(record);resetForm();render();});
+$('cancelEdit').addEventListener('click',resetForm);
+$('records').addEventListener('click',async e=>{const edit=e.target.closest('[data-edit]'),del=e.target.closest('[data-delete]');if(edit){const r=(await allRecords()).find(x=>x.id===edit.dataset.edit);if(!r)return;editing=r.id;$('type').value=r.type;$('title').value=r.title;$('content').value=r.content;$('formTitle').textContent='编辑记忆';$('saveBtn').textContent='保存修改';$('cancelEdit').hidden=false;window.scrollTo({top:0,behavior:'smooth'});}if(del){if(confirm('确定删除这条记忆吗？')){await deleteRecord(del.dataset.delete);render();}}});
+$('filter').addEventListener('change',render);$('search').addEventListener('input',render);
+$('export').addEventListener('click',async()=>{const records=(await allRecords()).filter(r=>r.projectId===current);const blob=new Blob([JSON.stringify({format:'rp-memory-public-v1',projectId:current,exportedAt:new Date().toISOString(),records},null,2)],{type:'application/json'});const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='rp-memory-'+current.replace(/[^\w-]+/g,'_')+'.json';a.click();URL.revokeObjectURL(url);});
+$('importBtn').addEventListener('click',()=>$('importFile').click());
+$('importFile').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;try{const data=JSON.parse(await f.text());if(!Array.isArray(data.records))throw Error('JSON 中没有 records 数组');let n=0;for(const r of data.records){if(!r||typeof r.title!=='string'||typeof r.content!=='string'||!labels[r.type])continue;await saveRecord({id:id(),projectId:current,type:r.type,title:r.title,content:r.content,updatedAt:new Date().toISOString()});n++;}alert('已导入 '+n+' 条到当前项目');render();}catch(err){alert('导入失败：'+err.message);}e.target.value='';});
+(async()=>{db=await openDB();projects=await loadProjects();if(!projects.length){projects=['我的故事'];await saveProject(projects[0]);}current=projects[0];renderProjects();await render();})().catch(e=>alert('本地存储初始化失败：'+e.message));
+})();
+</script>
+</body>
+</html>
